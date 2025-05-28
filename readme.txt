@@ -69,6 +69,9 @@ Currently, the plugin is designed specifically for WordPress search forms. Futur
 
 == Changelog ==
 
+= 1.0.1 =
+* Added uninstall.php to clean up plugin options on uninstall
+
 = 1.0.0 =
 * Initial release
 
