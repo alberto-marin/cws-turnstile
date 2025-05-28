@@ -3,7 +3,7 @@
  * Plugin Name: CWS Turnstile
  * Plugin URI: https://creativewebstudio.co.uk
  * Description: Integrates Cloudflare Turnstile protection for WordPress search forms
- * Version: 1.0.0
+ * Version: 1.0.2
  * Author: Alberto Marin
  * Author URI: https://creativewebstudio.co.uk
  * Text Domain: cws-turnstile
@@ -27,7 +27,7 @@ class CWS_Turnstile {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.0.0';
+	const VERSION = '1.0.2';
 
 	/**
 	 * Option name for site key
@@ -42,6 +42,20 @@ class CWS_Turnstile {
 	 * @var string
 	 */
 	const SECRET_KEY_OPTION = 'cws_turnstile_secret_key';
+
+	/**
+	 * Option name for theme
+	 *
+	 * @var string
+	 */
+	const THEME_OPTION = 'cws_turnstile_theme';
+
+	/**
+	 * Option name for size
+	 *
+	 * @var string
+	 */
+	const SIZE_OPTION = 'cws_turnstile_size';
 
 	/**
 	 * Instance of this class
@@ -142,6 +156,26 @@ class CWS_Turnstile {
 			)
 		);
 
+		register_setting(
+			'cws_turnstile_settings',
+			self::THEME_OPTION,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'dark',
+			)
+		);
+
+		register_setting(
+			'cws_turnstile_settings',
+			self::SIZE_OPTION,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'compact',
+			)
+		);
+
 		add_settings_section(
 			'cws_turnstile_main_section',
 			__( 'API Keys', 'cws-turnstile' ),
@@ -161,6 +195,22 @@ class CWS_Turnstile {
 			'cws_turnstile_secret_key',
 			__( 'Secret Key', 'cws-turnstile' ),
 			array( $this, 'render_secret_key_field' ),
+			'cws_turnstile_settings',
+			'cws_turnstile_main_section'
+		);
+
+		add_settings_field(
+			'cws_turnstile_theme',
+			__( 'Widget Theme', 'cws-turnstile' ),
+			array( $this, 'render_theme_field' ),
+			'cws_turnstile_settings',
+			'cws_turnstile_main_section'
+		);
+
+		add_settings_field(
+			'cws_turnstile_size',
+			__( 'Widget Size', 'cws-turnstile' ),
+			array( $this, 'render_size_field' ),
 			'cws_turnstile_settings',
 			'cws_turnstile_main_section'
 		);
@@ -192,6 +242,35 @@ class CWS_Turnstile {
 		?>
 		<input type="password" name="<?php echo esc_attr( self::SECRET_KEY_OPTION ); ?>" value="<?php echo esc_attr( $secret_key ); ?>" class="regular-text">
 		<p class="description"><?php esc_html_e( 'The secret key is used to verify Turnstile responses.', 'cws-turnstile' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render the theme field
+	 */
+	public function render_theme_field() {
+		$theme = get_option( self::THEME_OPTION, 'dark' );
+		?>
+		<select name="<?php echo esc_attr( self::THEME_OPTION ); ?>">
+			<option value="auto" <?php selected( $theme, 'auto' ); ?>><?php esc_html_e( 'Auto', 'cws-turnstile' ); ?></option>
+			<option value="light" <?php selected( $theme, 'light' ); ?>><?php esc_html_e( 'Light', 'cws-turnstile' ); ?></option>
+			<option value="dark" <?php selected( $theme, 'dark' ); ?>><?php esc_html_e( 'Dark', 'cws-turnstile' ); ?></option>
+		</select>
+		<p class="description"><?php esc_html_e( 'Choose the Turnstile widget theme.', 'cws-turnstile' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render the size field
+	 */
+	public function render_size_field() {
+		$size = get_option( self::SIZE_OPTION, 'compact' );
+		?>
+		<select name="<?php echo esc_attr( self::SIZE_OPTION ); ?>">
+			<option value="normal" <?php selected( $size, 'normal' ); ?>><?php esc_html_e( 'Normal', 'cws-turnstile' ); ?></option>
+			<option value="compact" <?php selected( $size, 'compact' ); ?>><?php esc_html_e( 'Compact', 'cws-turnstile' ); ?></option>
+		</select>
+		<p class="description"><?php esc_html_e( 'Choose the Turnstile widget size.', 'cws-turnstile' ); ?></p>
 		<?php
 	}
 
@@ -240,7 +319,10 @@ class CWS_Turnstile {
             return $form;
         }
 
-        $widget = '<div class="cf-turnstile" data-sitekey="' . esc_attr( TURNSTILE_SITE_KEY ) . '" data-theme="dark" data-size="compact" data-response-field-name="cf-turnstile-response"></div>';
+        $theme = get_option( self::THEME_OPTION, 'dark' );
+        $size = get_option( self::SIZE_OPTION, 'compact' );
+
+        $widget = '<div class="cf-turnstile" data-sitekey="' . esc_attr( TURNSTILE_SITE_KEY ) . '" data-theme="' . esc_attr( $theme ) . '" data-size="' . esc_attr( $size ) . '" data-response-field-name="cf-turnstile-response"></div>';
 
         // Insert before the closing form tag.
         $form = str_replace( '</form>', $widget . '</form>', $form );

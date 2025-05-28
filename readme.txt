@@ -2,7 +2,7 @@
 Contributors: albertomake
 Tags: security, spam, captcha, cloudflare, turnstile, form, protection
 Requires at least: 5.3
-Tested up to: 6.8.
+Tested up to: 6.8.1
 Stable tag: 1.0.0
 Requires PHP: 7.4
 License: GPLv2 or later
@@ -68,6 +68,9 @@ Currently, the plugin is designed specifically for WordPress search forms. Futur
 2. Plugin settings page where you can enter your API keys
 
 == Changelog ==
+
+= 1.0.2 =
+* Add admin settings to allow users to select Theme and Size options
 
 = 1.0.1 =
 * Added uninstall.php to clean up plugin options on uninstall
