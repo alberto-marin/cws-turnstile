@@ -3,7 +3,7 @@
  * Plugin Name: CWS Turnstile
  * Plugin URI: https://creativewebstudio.co.uk
  * Description: Integrates Cloudflare Turnstile protection for WordPress search forms
- * Version: 1.0.2
+ * Version: 1.1.0
  * Author: Alberto Marin
  * Author URI: https://creativewebstudio.co.uk
  * Text Domain: cws-turnstile
@@ -27,7 +27,7 @@ class CWS_Turnstile {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.0.2';
+	const VERSION = '1.1.0';
 
 	/**
 	 * Option name for site key
@@ -58,6 +58,20 @@ class CWS_Turnstile {
 	const SIZE_OPTION = 'cws_turnstile_size';
 
 	/**
+	 * Option name for search form protection
+	 *
+	 * @var string
+	 */
+	const ENABLE_SEARCH_OPTION = 'cws_turnstile_enable_search';
+
+	/**
+	 * Option name for comment form protection
+	 *
+	 * @var string
+	 */
+	const ENABLE_COMMENTS_OPTION = 'cws_turnstile_enable_comments';
+
+	/**
 	 * Instance of this class
 	 *
 	 * @var CWS_Turnstile
@@ -76,6 +90,13 @@ class CWS_Turnstile {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
         add_filter( 'get_search_form', array( $this, 'inject_turnstile_into_search_form' ) );
 		add_action( 'template_redirect', array( $this, 'verify_search_turnstile' ) );
+		
+		 // Comment form protection
+		$enable_comments = get_option( self::ENABLE_COMMENTS_OPTION, false );
+		if ( $enable_comments ) {
+			add_filter( 'comment_form_after_fields', array( $this, 'add_turnstile_to_comment_form' ) );
+			add_filter( 'preprocess_comment', array( $this, 'verify_comment_turnstile' ) );
+		}
 		
 		// Define constants for backward compatibility.
 		if ( ! defined( 'TURNSTILE_SITE_KEY' ) ) {
@@ -176,6 +197,26 @@ class CWS_Turnstile {
 			)
 		);
 
+		register_setting(
+			'cws_turnstile_settings',
+			self::ENABLE_SEARCH_OPTION,
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => true,
+			)
+		);
+
+		register_setting(
+			'cws_turnstile_settings',
+			self::ENABLE_COMMENTS_OPTION,
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => false,
+			)
+		);
+
 		add_settings_section(
 			'cws_turnstile_main_section',
 			__( 'API Keys', 'cws-turnstile' ),
@@ -211,6 +252,22 @@ class CWS_Turnstile {
 			'cws_turnstile_size',
 			__( 'Widget Size', 'cws-turnstile' ),
 			array( $this, 'render_size_field' ),
+			'cws_turnstile_settings',
+			'cws_turnstile_main_section'
+		);
+
+		add_settings_field(
+			'cws_turnstile_enable_search',
+			__( 'Enable Search Form Protection', 'cws-turnstile' ),
+			array( $this, 'render_enable_search_field' ),
+			'cws_turnstile_settings',
+			'cws_turnstile_main_section'
+		);
+
+		add_settings_field(
+			'cws_turnstile_enable_comments',
+			__( 'Enable Comment Form Protection', 'cws-turnstile' ),
+			array( $this, 'render_enable_comments_field' ),
 			'cws_turnstile_settings',
 			'cws_turnstile_main_section'
 		);
@@ -275,6 +332,28 @@ class CWS_Turnstile {
 	}
 
 	/**
+	 * Render the enable search field
+	 */
+	public function render_enable_search_field() {
+		$enable_search = get_option( self::ENABLE_SEARCH_OPTION, true );
+		?>
+		<input type="checkbox" name="<?php echo esc_attr( self::ENABLE_SEARCH_OPTION ); ?>" value="1" <?php checked( $enable_search, true ); ?>>
+		<p class="description"><?php esc_html_e( 'Enable Turnstile protection for the search form.', 'cws-turnstile' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render the enable comments field
+	 */
+	public function render_enable_comments_field() {
+		$enable_comments = get_option( self::ENABLE_COMMENTS_OPTION, false );
+		?>
+		<input type="checkbox" name="<?php echo esc_attr( self::ENABLE_COMMENTS_OPTION ); ?>" value="1" <?php checked( $enable_comments, true ); ?>>
+		<p class="description"><?php esc_html_e( 'Enable Turnstile protection for the comment form.', 'cws-turnstile' ); ?></p>
+		<?php
+	}
+
+	/**
 	 * Display the admin page
 	 */
 	public function display_admin_page() {
@@ -316,6 +395,11 @@ class CWS_Turnstile {
      */
     public function inject_turnstile_into_search_form( $form ) {
         if ( ! defined( 'TURNSTILE_SITE_KEY' ) || empty( TURNSTILE_SITE_KEY ) ) {
+            return $form;
+        }
+
+        $enable_search = get_option( self::ENABLE_SEARCH_OPTION, true );
+        if ( ! $enable_search ) {
             return $form;
         }
 
@@ -397,6 +481,43 @@ class CWS_Turnstile {
 				exit;
 			}
 		}
+	}
+
+	/**
+	 * Add Turnstile widget to the comment form.
+	 *
+	 * @return void
+	 */
+	public function add_turnstile_to_comment_form() {
+		if ( ! defined( 'TURNSTILE_SITE_KEY' ) || empty( TURNSTILE_SITE_KEY ) ) {
+			return;
+		}
+
+		$theme = get_option( self::THEME_OPTION, 'dark' );
+		$size  = get_option( self::SIZE_OPTION, 'compact' );
+
+		echo '<div class="cf-turnstile" data-sitekey="' . esc_attr( TURNSTILE_SITE_KEY ) . '" data-theme="' . esc_attr( $theme ) . '" data-size="' . esc_attr( $size ) . '" data-response-field-name="cf-turnstile-response"></div>';
+	}
+
+	/**
+	 * Verify Turnstile response for comment submission.
+	 *
+	 * @param array $commentdata The comment data.
+	 * @return array The comment data.
+	 */
+	public function verify_comment_turnstile( $commentdata ) {
+		if ( ! isset( $_POST['cf-turnstile-response'] ) || empty( $_POST['cf-turnstile-response'] ) ) {
+			wp_die( esc_html__( 'Turnstile verification failed. Please try again.', 'cws-turnstile' ) );
+		}
+
+		$turnstile_response = sanitize_text_field( wp_unslash( $_POST['cf-turnstile-response'] ) );
+		$is_valid           = $this->validate_turnstile( $turnstile_response );
+
+		if ( ! $is_valid ) {
+			wp_die( esc_html__( 'Turnstile verification failed. Please try again.', 'cws-turnstile' ) );
+		}
+
+		return $commentdata;
 	}
 }
 
