@@ -375,16 +375,34 @@ class CWS_Turnstile {
 	}
 
 	/**
-	 * Enqueue Cloudflare Turnstile script
+	 * Enqueue Cloudflare Turnstile script conditionally.
 	 */
 	public function enqueue_scripts() {
-		wp_enqueue_script( 
-			'cloudflare-turnstile', 
-			'https://challenges.cloudflare.com/turnstile/v0/api.js', 
-			array(), 
-			self::VERSION, 
-			true 
-		);
+		// Check if Turnstile is enabled for the search form.
+		$enable_search = get_option( self::ENABLE_SEARCH_OPTION, true );
+		if ( $enable_search && has_filter( 'get_search_form', array( $this, 'inject_turnstile_into_search_form' ) ) ) {
+			wp_enqueue_script( 
+				'cloudflare-turnstile', 
+				'https://challenges.cloudflare.com/turnstile/v0/api.js', 
+				array(), 
+				null, 
+				true 
+			);
+			return;
+		}
+
+		// Check if Turnstile is enabled for the comment form.
+		$enable_comments = get_option( self::ENABLE_COMMENTS_OPTION, false );
+		if ( $enable_comments && is_singular() && comments_open() ) {
+			wp_enqueue_script( 
+				'cloudflare-turnstile', 
+				'https://challenges.cloudflare.com/turnstile/v0/api.js', 
+				array(), 
+				null, 
+				true 
+			);
+			return;
+		}
 	}
 
     /**
