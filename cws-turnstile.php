@@ -3,7 +3,7 @@
  * Plugin Name: CWS Turnstile
  * Plugin URI: https://creativewebstudio.co.uk
  * Description: Integrates Cloudflare Turnstile protection for WordPress search forms
- * Version: 1.1.0
+ * Version: 1.1.1
  * Author: Alberto Marin
  * Author URI: https://creativewebstudio.co.uk
  * Text Domain: cws-turnstile

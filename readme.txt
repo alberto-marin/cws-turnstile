@@ -3,7 +3,7 @@ Contributors: albertomake
 Tags: security, search, captcha, cloudflare, turnstile
 Requires at least: 5.3
 Tested up to: 6.8
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -63,6 +63,9 @@ Yes, CWS Turnstile is compatible with most caching plugins as the verification h
 Currently, the plugin is designed specifically for WordPress search and comment forms. Future versions may include support for additional form types.
 
 == Changelog ==
+
+= 1.1.1 =
+* Improved Performance: avoid unnecessary script loading, improving page load times.
 
 = 1.1.0 =
 * Add support for comment forms
